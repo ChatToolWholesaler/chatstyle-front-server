@@ -442,7 +442,8 @@ public class StateObject : MonoBehaviour {
             MsgModel obj = JsonUtility.FromJson<MsgModel>(data);
             GameObject.Find("Chat UI").GetComponent<ChatControl>().AddContent(obj.type, obj.position_x, obj.position_y, obj.position_z, obj.roomno, obj.username, obj.nickname, obj.channel, obj.content);
             MsgModel msgmodel = new MsgModel();
-            msgmodel.type = 3;
+            //msgmodel.type = 3;
+            msgmodel.type = obj.type;
             msgmodel.position_x = obj.position_x;
             msgmodel.position_y = obj.position_y;
             msgmodel.position_z = obj.position_z;
@@ -490,7 +491,7 @@ public class StateObject : MonoBehaviour {
                                 }
                             }
                             break;
-                        case 4:
+                        case 4://建议添加系统频道 查询双方昵称并分别对两个客户端发送通道4消息，注意玩家不存在的情况
                             foreach (GameObject Player in GameObject.FindGameObjectsWithTag("Player"))
                             {
                                 if (Player.name == obj.username)
