@@ -423,7 +423,7 @@ public class StateObject : MonoBehaviour {
                     NearPlayers.socketmodel = socketmodel2;*/
                 }
             string json = JsonUtility.ToJson(NearPlayers);
-            Debug.Log(json);
+            //Debug.Log(json);
             pos_socket.AsyncSendData(posclientsocket, json);
             
         }
@@ -492,12 +492,24 @@ public class StateObject : MonoBehaviour {
                             }
                             break;
                         case 4://建议添加系统频道 查询双方昵称并分别对两个客户端发送通道4消息，注意玩家不存在的情况
+                            bool tempj = false;//判断是否找到对应玩家
+                            Debug.Log(obj.username);
                             foreach (GameObject Player in GameObject.FindGameObjectsWithTag("Player"))
                             {
-                                if (Player.name == obj.username)
+                                if (Player.GetComponent<movement>().id == obj.username)
                                 {
-                                    msg_socket.AsyncSendData(Player.GetComponent<movement>().msgSocket, json);
+                                    tempj = true;
+                                    msg_socket.AsyncSendData(Player.GetComponent<movement>().msgSocket, json);//客户端记得判断收到的悄悄话消息中的id是否为自己，是的话就是from...,否则to...
+                                    callback.msgmodel[0].nickname = Player.GetComponent<movement>().nickname;
+                                    json = JsonUtility.ToJson(callback);
+                                    msg_socket.AsyncSendData(msgclientsocket, json);
                                 }
+                            }
+                            if (!tempj)
+                            {
+                                callback.msgmodel[0].content = "该玩家不存在或者未上线";
+                                json = JsonUtility.ToJson(callback);
+                                msg_socket.AsyncSendData(msgclientsocket, json);
                             }
                             break;
                         default:
