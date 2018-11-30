@@ -2797,7 +2797,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6a0a17ee0a2bfd4c94df42d2dda5194, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ip: 110.64.87.70
+  ip: 127.0.0.1
   pos_port: 50000
   msg_port: 50001
   RoomCount: 2
@@ -6446,7 +6446,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0.000015258789, y: 499.99997}
+  m_AnchoredPosition: {x: 0.000047229318, y: 499.99997}
   m_SizeDelta: {x: -0.0000145675995, y: 1000}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1046626230
@@ -9205,7 +9205,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0.000015258789, y: 499.99997}
+  m_AnchoredPosition: {x: 0.000047229318, y: 499.99997}
   m_SizeDelta: {x: -0.0000145675995, y: 1000}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1614449781
@@ -11307,7 +11307,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0.000015258789, y: 499.99997}
+  m_AnchoredPosition: {x: 0.000047229318, y: 499.99997}
   m_SizeDelta: {x: -0.0000145675995, y: 1000}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2080809426

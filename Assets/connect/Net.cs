@@ -575,6 +575,59 @@ namespace Net
 
     }
 
+    public class tempdata//组包专用数据类，记得定时清空！(统计连续curlayer不为0数据包个数，达到一定值即清空)
+    {
+        public string[] data;
+        public Socket clientsocket;
+        public int curlayer;//当前层数
+        public tempdata(Socket clientsocket)
+        {
+            this.clientsocket = clientsocket;
+            data = new string[3];//分层处理数据（最高3层）,进行组包
+            curlayer = 0;
+        }
+        public void FindLeftBorder(string substr)
+        {
+            if (curlayer == 0)
+            {
+                curlayer++;
+            }
+            else//这种情况即为发现嵌套边界
+            {
+                curlayer++;
+                if (curlayer > 2)
+                {
+
+                }
+                else
+                {
+                    data[curlayer - 1] = substr;
+                }
+                
+            }
+        }
+        public string FindRightBorder(string substr)
+        {
+            curlayer--;
+            if (curlayer < 0)
+            {
+                return null;
+            }
+            else
+            {
+                return (data[curlayer] + substr);
+            }
+        }
+        public void clear()
+        {
+            for (int i = 0; i < 3; i++) 
+            {
+                data[i] = "";
+            }
+            curlayer = 0;
+        }
+    }
+
     public class PosSeverSocket
 
     {

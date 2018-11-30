@@ -345,6 +345,7 @@ public class StateObject : MonoBehaviour {
     public void Pos_Receive(string data, Socket posclientsocket)
     {
         //如果此人已上线，即该线哈希表存在此人的msgsocket，则修改表项键值
+        //计划接到id不为空(第一次必不为空)则加载一次周围人，客户端刷新周围人列表
         try
         {
             SocketModel obj = JsonUtility.FromJson<SocketModel>(data);
@@ -352,16 +353,25 @@ public class StateObject : MonoBehaviour {
             PullModel NearPlayers = null;
             if (GameObject.Find(obj.id)!=null)
             {
+                float position_x = ((float)(obj.p >> 16)) / 32 - 1024;
+                float position_y = ((float)((obj.p << 16) >> 16)) / 32 - 1024;
+                float position_z = ((float)((obj.r << 2) >> 16)) / 32 - 1024;
+                float velocity_x = ((float)(obj.v >> 20)) / 8 - 64;
+                float velocity_y = ((float)((obj.v << 12) >> 22)) / 8 - 64;
+                float velocity_z = ((float)((obj.v << 22) >> 22)) / 8 - 64; ;
+                float forward_x = ((float)((obj.r << 18) >> 25)) / 64 - 1;
+                float forward_z = ((float)((obj.r << 25) >> 25)) / 64 - 1;
+                int roomno = (int)(obj.r >> 30);
                 GameObject playerobj = GameObject.Find(obj.id);
                 Player = playerobj.GetComponent<movement>();
                 if (Player.posSocket == null)
                 {
                     Player.setpos(posclientsocket);
-                    clientsockets[obj.roomno - 1][Player.msgSocket] = posclientsocket;//哈希表赋值
+                    clientsockets[roomno - 1][Player.msgSocket] = posclientsocket;//哈希表赋值
                 }
-                Player.GetComponent<Rigidbody>().velocity = new Vector3(obj.velocity_x, obj.velocity_y, obj.velocity_z);
-                Player.GetComponent<Rigidbody>().MovePosition(new Vector3(obj.position_x, obj.position_y, obj.position_z));
-                Player.transform.forward = new Vector3(obj.forward_x, 0f, obj.forward_z);
+                Player.GetComponent<Rigidbody>().velocity = new Vector3(velocity_x, velocity_y, velocity_z);
+                Player.GetComponent<Rigidbody>().MovePosition(new Vector3(position_x, position_y, position_z));
+                Player.transform.forward = new Vector3(forward_x, 0f, forward_z);
                 NearPlayers = new PullModel();
 
                 ArrayList socketmodel = new ArrayList();
@@ -372,14 +382,17 @@ public class StateObject : MonoBehaviour {
                         Callback_SocketModel tmp = new Callback_SocketModel();
                         tmp.id = P.name;
                         tmp.nickname = P.GetComponent<movement>().nickname;
-                        tmp.forward_x = P.transform.forward.x;
+                        /*tmp.forward_x = P.transform.forward.x;
                         tmp.forward_z = P.transform.forward.z;
                         tmp.position_x = P.transform.position.x;
                         tmp.position_y = P.transform.position.y;
                         tmp.position_z = P.transform.position.z;
                         tmp.velocity_x = P.GetComponent<Rigidbody>().velocity.x;
                         tmp.velocity_y = P.GetComponent<Rigidbody>().velocity.y;
-                        tmp.velocity_z = P.GetComponent<Rigidbody>().velocity.z;
+                        tmp.velocity_z = P.GetComponent<Rigidbody>().velocity.z;*/
+                        tmp.p = ((uint)((P.transform.position.x + 1024) * 32) << 16) | ((uint)((P.transform.position.y + 1024) * 32));
+                        tmp.v = ((uint)((P.GetComponent<Rigidbody>().velocity.x + 64) * 8) << 20) | ((uint)((P.GetComponent<Rigidbody>().velocity.y + 64) * 8) << 10) | ((uint)((P.GetComponent<Rigidbody>().velocity.z + 64) * 8));
+                        tmp.r = ((uint)(roomno) << 30) | ((uint)((P.transform.position.z + 1024) * 32) << 14) | ((uint)((P.transform.forward.x + 1) * 64) << 7) | ((uint)((P.transform.forward.z + 1) * 64));
                         socketmodel.Add(tmp);
                     }
                 }
@@ -710,7 +723,7 @@ public class Callback_SocketModel
 {
     public string id;
     public string nickname;
-    public float position_x;
+    /*public float position_x;
     public float position_y;
     public float position_z;
     public float velocity_x;
@@ -718,19 +731,17 @@ public class Callback_SocketModel
     public float velocity_z;
     public float forward_x;
     public float forward_z;
-    public int roomno;
+    public int roomno;*/
+    public uint p;//前16位存储position_x,后16位存储position_y
+    public uint v;//分10位存储velocity_xyz
+    public uint r;//前2位存储场景号，后数16位存储position_z,后数14位分7位存储forward
 }
-/*[System.Serializable]
-public class PullModel
-{
-    public SocketModel[] socketmodel;
-}*/
 [System.Serializable]
-public class SocketModel
+public class SocketModel//简化变量名并浓缩为三个int型数据，想办法取得服务器接收到至少一次id与nickname的信号(例如回传id为自身id的同时nickname为null)，之后不再传输id与nickname（null）。
 {
     public string id;
     public string nickname;
-    public float position_x;
+    /*public float position_x;
     public float position_y;
     public float position_z;
     public float velocity_x;
@@ -738,7 +749,10 @@ public class SocketModel
     public float velocity_z;
     public float forward_x;
     public float forward_z;
-    public int roomno;
+    public int roomno;*/
+    public uint p;//前16位存储position_x,后16位存储position_y
+    public uint v;//分10位存储velocity_xyz
+    public uint r;//前2位存储场景号，后数16位存储position_z,后数14位分7位存储forward
 }
 [System.Serializable]
 public class PullModel
