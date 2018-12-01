@@ -339,35 +339,48 @@ public class StateObject : MonoBehaviour {
     public PosSeverSocket pos_socket;
     public MsgSeverSocket msg_socket;
     public Hashtable[] clientsockets;//键为msgsocket，值为possocket
+    public Dictionary<Socket,List<GameObject>> postoplayers;//键为possocket，值为GameObject泛型
     public int RoomCount;
     public GameObject prefabs = null;
+    public GameObject GM;
 
     public void Pos_Receive(string data, Socket posclientsocket)
     {
         //如果此人已上线，即该线哈希表存在此人的msgsocket，则修改表项键值
-        //计划接到id不为空(第一次必不为空)则加载一次周围人，客户端刷新周围人列表
+        //计划接到nickname不为空(第一次必不为空)则加载一次周围人，客户端刷新周围人列表
         try
         {
             SocketModel obj = JsonUtility.FromJson<SocketModel>(data);
             movement Player;
             PullModel NearPlayers = null;
-            if (GameObject.Find(obj.id)!=null)
+            bool temp = false;
+            GameObject playerobj = null;
+            foreach (GameObject P in GameObject.FindGameObjectsWithTag("Player"))//判断是否存在这个玩家
             {
-                float position_x = ((float)(obj.p >> 16)) / 32 - 1024;
-                float position_y = ((float)((obj.p << 16) >> 16)) / 32 - 1024;
-                float position_z = ((float)((obj.r << 2) >> 16)) / 32 - 1024;
+                if (P.name == obj.id)
+                {
+                    temp = true;
+                    playerobj = P;
+                    break;
+                }
+            }
+            if (temp)
+            {
+                int roomno = (int)(obj.r >> 30);
+                float position_x = ((float)(obj.p >> 16)) / 32 - 1024 + GM.GetComponent<GameManagement>().SpawnPosition[roomno-1].x;
+                float position_y = ((float)((obj.p << 16) >> 16)) / 32 - 1024 + GM.GetComponent<GameManagement>().SpawnPosition[roomno-1].y;
+                float position_z = ((float)((obj.r << 2) >> 16)) / 32 - 1024 + GM.GetComponent<GameManagement>().SpawnPosition[roomno-1].z;
                 float velocity_x = ((float)(obj.v >> 20)) / 8 - 64;
                 float velocity_y = ((float)((obj.v << 12) >> 22)) / 8 - 64;
                 float velocity_z = ((float)((obj.v << 22) >> 22)) / 8 - 64; ;
                 float forward_x = ((float)((obj.r << 18) >> 25)) / 64 - 1;
                 float forward_z = ((float)((obj.r << 25) >> 25)) / 64 - 1;
-                int roomno = (int)(obj.r >> 30);
-                GameObject playerobj = GameObject.Find(obj.id);
                 Player = playerobj.GetComponent<movement>();
                 if (Player.posSocket == null)
                 {
                     Player.setpos(posclientsocket);
                     clientsockets[roomno - 1][Player.msgSocket] = posclientsocket;//哈希表赋值
+                    postoplayers.Add(posclientsocket,new List<GameObject>());//初始化对应周围玩家列表
                 }
                 Player.GetComponent<Rigidbody>().velocity = new Vector3(velocity_x, velocity_y, velocity_z);
                 Player.GetComponent<Rigidbody>().MovePosition(new Vector3(position_x, position_y, position_z));
@@ -375,25 +388,54 @@ public class StateObject : MonoBehaviour {
                 NearPlayers = new PullModel();
 
                 ArrayList socketmodel = new ArrayList();
-                foreach (GameObject P in GameObject.FindGameObjectsWithTag("Player"))
+                if (obj.nickname != null&& obj.nickname != "")//此时需要加载该玩家周围玩家
                 {
-                    if ((P.transform.position - Player.transform.position).magnitude < 30)//局部加载附近的玩家
+                    postoplayers[posclientsocket].Clear();
+                    foreach (GameObject P in GameObject.FindGameObjectsWithTag("Player"))
                     {
-                        Callback_SocketModel tmp = new Callback_SocketModel();
-                        tmp.id = P.name;
-                        tmp.nickname = P.GetComponent<movement>().nickname;
-                        /*tmp.forward_x = P.transform.forward.x;
-                        tmp.forward_z = P.transform.forward.z;
-                        tmp.position_x = P.transform.position.x;
-                        tmp.position_y = P.transform.position.y;
-                        tmp.position_z = P.transform.position.z;
-                        tmp.velocity_x = P.GetComponent<Rigidbody>().velocity.x;
-                        tmp.velocity_y = P.GetComponent<Rigidbody>().velocity.y;
-                        tmp.velocity_z = P.GetComponent<Rigidbody>().velocity.z;*/
-                        tmp.p = ((uint)((P.transform.position.x + 1024) * 32) << 16) | ((uint)((P.transform.position.y + 1024) * 32));
-                        tmp.v = ((uint)((P.GetComponent<Rigidbody>().velocity.x + 64) * 8) << 20) | ((uint)((P.GetComponent<Rigidbody>().velocity.y + 64) * 8) << 10) | ((uint)((P.GetComponent<Rigidbody>().velocity.z + 64) * 8));
-                        tmp.r = ((uint)(roomno) << 30) | ((uint)((P.transform.position.z + 1024) * 32) << 14) | ((uint)((P.transform.forward.x + 1) * 64) << 7) | ((uint)((P.transform.forward.z + 1) * 64));
-                        socketmodel.Add(tmp);
+                        if ((P.transform.position - Player.transform.position).magnitude < 30)//局部加载附近的玩家
+                        {
+                            Callback_SocketModel tmp = new Callback_SocketModel();
+                            tmp.id = P.name;
+                            tmp.nickname = P.GetComponent<movement>().nickname;
+                            /*tmp.forward_x = P.transform.forward.x;
+                            tmp.forward_z = P.transform.forward.z;
+                            tmp.position_x = P.transform.position.x;
+                            tmp.position_y = P.transform.position.y;
+                            tmp.position_z = P.transform.position.z;
+                            tmp.velocity_x = P.GetComponent<Rigidbody>().velocity.x;
+                            tmp.velocity_y = P.GetComponent<Rigidbody>().velocity.y;
+                            tmp.velocity_z = P.GetComponent<Rigidbody>().velocity.z;*/
+                            tmp.p = ((uint)((P.transform.position.x - GM.GetComponent<GameManagement>().SpawnPosition[roomno - 1].x + 1024) * 32) << 16) | ((uint)((P.transform.position.y - GM.GetComponent<GameManagement>().SpawnPosition[roomno - 1].y + 1024) * 32));
+                            tmp.v = ((uint)((P.GetComponent<Rigidbody>().velocity.x + 64) * 8) << 20) | ((uint)((P.GetComponent<Rigidbody>().velocity.y + 64) * 8) << 10) | ((uint)((P.GetComponent<Rigidbody>().velocity.z + 64) * 8));
+                            tmp.r = ((uint)(roomno) << 30) | ((uint)((P.transform.position.z - GM.GetComponent<GameManagement>().SpawnPosition[roomno - 1].z + 1024) * 32) << 14) | ((uint)((P.transform.forward.x + 1) * 64) << 7) | ((uint)((P.transform.forward.z + 1) * 64));
+                            socketmodel.Add(tmp);
+                            postoplayers[posclientsocket].Add(P);
+                        }
+                    }
+                }
+                else//此时不需要加载，只需要提供位置数据
+                {
+                    foreach (GameObject P in postoplayers[posclientsocket])
+                    {
+                        if (P!=null)
+                        {
+                            Callback_SocketModel tmp = new Callback_SocketModel();
+                            tmp.id = P.name;
+                            tmp.nickname = P.GetComponent<movement>().nickname;
+                            /*tmp.forward_x = P.transform.forward.x;
+                            tmp.forward_z = P.transform.forward.z;
+                            tmp.position_x = P.transform.position.x;
+                            tmp.position_y = P.transform.position.y;
+                            tmp.position_z = P.transform.position.z;
+                            tmp.velocity_x = P.GetComponent<Rigidbody>().velocity.x;
+                            tmp.velocity_y = P.GetComponent<Rigidbody>().velocity.y;
+                            tmp.velocity_z = P.GetComponent<Rigidbody>().velocity.z;*/
+                            tmp.p = ((uint)((P.transform.position.x - GM.GetComponent<GameManagement>().SpawnPosition[roomno - 1].x + 1024) * 32) << 16) | ((uint)((P.transform.position.y - GM.GetComponent<GameManagement>().SpawnPosition[roomno - 1].y + 1024) * 32));
+                            tmp.v = ((uint)((P.GetComponent<Rigidbody>().velocity.x + 64) * 8) << 20) | ((uint)((P.GetComponent<Rigidbody>().velocity.y + 64) * 8) << 10) | ((uint)((P.GetComponent<Rigidbody>().velocity.z + 64) * 8));
+                            tmp.r = ((uint)(roomno) << 30) | ((uint)((P.transform.position.z - GM.GetComponent<GameManagement>().SpawnPosition[roomno - 1].z + 1024) * 32) << 14) | ((uint)((P.transform.forward.x + 1) * 64) << 7) | ((uint)((P.transform.forward.z + 1) * 64));
+                            socketmodel.Add(tmp);
+                        }
                     }
                 }
                 NearPlayers.socketmodel = (Callback_SocketModel[])socketmodel.ToArray(typeof(Callback_SocketModel));
@@ -599,6 +641,7 @@ public class StateObject : MonoBehaviour {
                         msgmodel.nickname = Player.GetComponent<movement>().nickname;
                         msgmodel.channel = 2;
                         msgmodel.content = msgmodel.nickname + "下线了";
+                        postoplayers.Remove((Socket)clientsockets[i][Player.GetComponent<movement>().msgSocket]);
                         clientsockets[i].Remove(Player.GetComponent<movement>().msgSocket);
                         break;
                     }
@@ -630,6 +673,7 @@ public class StateObject : MonoBehaviour {
                         msgmodel.nickname = Player.GetComponent<movement>().nickname;
                         msgmodel.channel = 2;
                         msgmodel.content = msgmodel.nickname + "下线了";
+                        postoplayers.Remove((Socket)clientsockets[i][Player.GetComponent<movement>().msgSocket]);
                         clientsockets[i].Remove(Player.GetComponent<movement>().msgSocket);
                         break;
                     }
@@ -681,6 +725,8 @@ public class StateObject : MonoBehaviour {
         }
         pos_socket = new PosSeverSocket();
         msg_socket = new MsgSeverSocket();
+        GM = GameObject.Find("GameManagement");
+        postoplayers = new Dictionary<Socket, List<GameObject>>();
         Thread thread = new Thread(new ThreadStart(posthread));
         thread.Start();
         Thread thread2 = new Thread(new ThreadStart(msgthread));
