@@ -344,6 +344,37 @@ public class StateObject : MonoBehaviour {
     public GameObject prefabs = null;
     public GameObject GM;
 
+    public IEnumerator go_offline(string _url, WWWForm _wForm, string userid)
+    {
+        WWW postData = new WWW(_url, _wForm);
+        yield return postData;
+        if (postData.error != null)
+        {
+            Debug.Log(postData.error);
+        }
+        else
+        {
+            GoOnlineModel obj = JsonUtility.FromJson<GoOnlineModel>(postData.text);
+            if (obj.code == 200)
+            {
+                Debug.Log(userid + "下线成功");
+            }
+            else
+            {
+                if (obj.code == 400)
+                {
+                    Debug.Log(userid + "下线失败！");//插入数据库失败
+                }
+                else
+                {
+                    Debug.Log(obj);
+                }
+            }
+
+            Debug.Log(postData.text);
+        }
+    }
+
     public void Pos_Receive(string data, Socket posclientsocket)
     {
         //如果此人已上线，即该线哈希表存在此人的msgsocket，则修改表项键值
@@ -421,8 +452,8 @@ public class StateObject : MonoBehaviour {
                         if (P!=null)
                         {
                             Callback_SocketModel tmp = new Callback_SocketModel();
-                            tmp.id = P.name;
-                            tmp.nickname = P.GetComponent<movement>().nickname;
+                            tmp.id = null;
+                            tmp.nickname = null;
                             /*tmp.forward_x = P.transform.forward.x;
                             tmp.forward_z = P.transform.forward.z;
                             tmp.position_x = P.transform.position.x;
@@ -599,7 +630,11 @@ public class StateObject : MonoBehaviour {
                             msg_socket.AsyncSendData((Socket)de.Key, json);
                         }
                     }
-                    
+                    WWWForm form1 = new WWWForm();
+                    form1.AddField("roomno", obj.roomno);
+                    form1.AddField("userId", int.Parse(obj.username));
+                    form1.AddField("type", 0);
+                    StartCoroutine(go_offline("http://localhost:3000/api/v1/user/setOnline", form1, obj.username));
                     //Destroy(GameObject.Find(item.username));
                 }
             }
@@ -763,6 +798,11 @@ public class LoginModel
 public class RegisterModel
 {
     public int result;
+}
+[System.Serializable]
+public class GoOnlineModel
+{
+    public int code;
 }
 [System.Serializable]
 public class Callback_SocketModel
