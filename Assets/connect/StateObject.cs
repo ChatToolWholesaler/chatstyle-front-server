@@ -375,6 +375,37 @@ public class StateObject : MonoBehaviour {
         }
     }
 
+    public IEnumerator save_msg(string _url, WWWForm _wForm)
+    {
+        WWW postData = new WWW(_url, _wForm);
+        yield return postData;
+        if (postData.error != null)
+        {
+            Debug.Log(postData.error);
+        }
+        else
+        {
+            GoOnlineModel obj = JsonUtility.FromJson<GoOnlineModel>(postData.text);
+            if (obj.code == 200)
+            {
+                Debug.Log("消息存储成功");
+            }
+            else
+            {
+                if (obj.code == 400)
+                {
+                    Debug.Log("消息存储失败！");//插入数据库失败
+                }
+                else
+                {
+                    Debug.Log(obj);
+                }
+            }
+
+            Debug.Log(postData.text);
+        }
+    }
+
     public void Pos_Receive(string data, Socket posclientsocket)
     {
         //如果此人已上线，即该线哈希表存在此人的msgsocket，则修改表项键值
@@ -424,7 +455,7 @@ public class StateObject : MonoBehaviour {
                     postoplayers[posclientsocket].Clear();
                     foreach (GameObject P in GameObject.FindGameObjectsWithTag("Player"))
                     {
-                        if ((P.transform.position - Player.transform.position).magnitude < 30)//局部加载附近的玩家
+                        if ((P.name!=Player.name)&&(P.transform.position - Player.transform.position).magnitude < 30)//局部加载附近的玩家
                         {
                             Callback_SocketModel tmp = new Callback_SocketModel();
                             tmp.id = P.name;
@@ -542,6 +573,20 @@ public class StateObject : MonoBehaviour {
             callback.msgmodel = new MsgModel[1];
             callback.msgmodel[0] = msgmodel;
             string json = JsonUtility.ToJson(callback);
+            WWWForm form = new WWWForm();//存储消息
+            form.AddField("type", obj.type);
+            form.AddField("position_x", obj.position_x.ToString());
+            form.AddField("position_y", obj.position_y.ToString());
+            form.AddField("position_z", obj.position_z.ToString());
+            form.AddField("roomno", obj.roomno);
+            form.AddField("username", obj.username);
+            form.AddField("nickname", obj.nickname);
+            form.AddField("channel", obj.channel);
+            form.AddField("content", obj.content);
+            if (obj.type==1|| obj.type == 2|| obj.type == 3)
+            {
+                StartCoroutine(save_msg("http://localhost:3000/api/v1/message/uploadMsg", form));
+            }
             if (obj != null) 
             {
                 if (obj.type > 5 || obj.type < 1) 
