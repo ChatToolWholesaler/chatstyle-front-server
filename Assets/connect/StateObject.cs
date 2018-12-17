@@ -437,6 +437,7 @@ public class StateObject : MonoBehaviour {
                 float velocity_z = ((float)((obj.v << 22) >> 22)) / 8 - 64; ;
                 float forward_x = ((float)((obj.r << 18) >> 25)) / 64 - 1;
                 float forward_z = ((float)((obj.r << 25) >> 25)) / 64 - 1;
+                int tex = (int)(obj.v >> 30);
                 Player = playerobj.GetComponent<movement>();
                 if (Player.posSocket == null)
                 {
@@ -447,6 +448,7 @@ public class StateObject : MonoBehaviour {
                 Player.GetComponent<Rigidbody>().velocity = new Vector3(velocity_x, velocity_y, velocity_z);
                 Player.GetComponent<Rigidbody>().MovePosition(new Vector3(position_x, position_y, position_z));
                 Player.transform.forward = new Vector3(forward_x, 0f, forward_z);
+                Player.cur_tex = tex;
                 NearPlayers = new PullModel();
 
                 ArrayList socketmodel = new ArrayList();
@@ -469,7 +471,7 @@ public class StateObject : MonoBehaviour {
                             tmp.velocity_y = P.GetComponent<Rigidbody>().velocity.y;
                             tmp.velocity_z = P.GetComponent<Rigidbody>().velocity.z;*/
                             tmp.p = ((uint)((P.transform.position.x - GM.GetComponent<GameManagement>().SpawnPosition[roomno - 1].x + 1024) * 32) << 16) | ((uint)((P.transform.position.y - GM.GetComponent<GameManagement>().SpawnPosition[roomno - 1].y + 1024) * 32));
-                            tmp.v = ((uint)((P.GetComponent<Rigidbody>().velocity.x + 64) * 8) << 20) | ((uint)((P.GetComponent<Rigidbody>().velocity.y + 64) * 8) << 10) | ((uint)((P.GetComponent<Rigidbody>().velocity.z + 64) * 8));
+                            tmp.v = ((uint)(P.GetComponent<movement>().cur_tex) << 30) | ((uint)((P.GetComponent<Rigidbody>().velocity.x + 64) * 8) << 20) | ((uint)((P.GetComponent<Rigidbody>().velocity.y + 64) * 8) << 10) | ((uint)((P.GetComponent<Rigidbody>().velocity.z + 64) * 8));
                             tmp.r = ((uint)(roomno) << 30) | ((uint)((P.transform.position.z - GM.GetComponent<GameManagement>().SpawnPosition[roomno - 1].z + 1024) * 32) << 14) | ((uint)((P.transform.forward.x + 1) * 64) << 7) | ((uint)((P.transform.forward.z + 1) * 64));
                             socketmodel.Add(tmp);
                             postoplayers[posclientsocket].Add(P);

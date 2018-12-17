@@ -14,6 +14,7 @@ public class movement : MonoBehaviour
     public string nickname;
     public Socket msgSocket;
     public Socket posSocket;
+    public int cur_tex;
     [HideInInspector] public bool m_TurnControl;
     [HideInInspector] public bool m_MoveControl;
 
