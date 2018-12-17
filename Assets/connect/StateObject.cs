@@ -16,6 +16,7 @@ public class StateObject : MonoBehaviour {
     public string ip = "vipgz1.idcfengye.com";
     public int pos_port = 10134;
     public int msg_port = 10135;
+    public string urlip = "192.168.1.124";
     //public ClientSocket pos_Socket;
     //public ClientSocket msg_Socket;
 
@@ -634,7 +635,7 @@ public class StateObject : MonoBehaviour {
             form.AddField("content", obj.content);
             if (obj.type==1|| obj.type == 2|| obj.type == 3)
             {
-                StartCoroutine(save_msg("http://localhost:3000/api/v1/message/uploadMsg", form));
+                StartCoroutine(save_msg("http://" + GameObject.Find("StateObject").GetComponent<StateObject>().urlip + ":3000/api/v1/message/uploadMsg", form));
             }
 
             if (obj != null) 
@@ -729,7 +730,7 @@ public class StateObject : MonoBehaviour {
                     form1.AddField("roomno", obj.roomno);
                     form1.AddField("userId", int.Parse(obj.username));
                     form1.AddField("type", 0);
-                    StartCoroutine(go_offline("http://localhost:3000/api/v1/user/setOnline", form1, obj.username));
+                    StartCoroutine(go_offline("http://" + GameObject.Find("StateObject").GetComponent<StateObject>().urlip + ":3000/api/v1/user/setOnline", form1, obj.username));
                     //Destroy(GameObject.Find(item.username));
                 }
             }
@@ -879,7 +880,7 @@ public class StateObject : MonoBehaviour {
             time = 0f;
             CheckOffLine();
             WWWForm form = new WWWForm();//存储消息
-            StartCoroutine(poll("http://localhost:3000/api/v1/admin/polling", form));
+            StartCoroutine(poll("http://" + GameObject.Find("StateObject").GetComponent<StateObject>().urlip + ":3000/api/v1/admin/polling", form));
         }
     }
 }
