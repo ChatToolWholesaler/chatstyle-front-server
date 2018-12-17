@@ -406,6 +406,52 @@ public class StateObject : MonoBehaviour {
         }
     }
 
+    public IEnumerator poll(string _url, WWWForm _wForm)
+    {
+        WWW postData = new WWW(_url, _wForm);
+        yield return postData;
+        if (postData.error != null)
+        {
+            Debug.Log(postData.error);
+        }
+        else
+        {
+            PollModel obj = JsonUtility.FromJson<PollModel>(postData.text);
+            if (obj.code == 200)//发布公告
+            {
+                foreach (Polldata notice in obj.data)
+                {
+                    MsgModel msgmodel = new MsgModel();
+                    msgmodel.channel = 1;
+                    msgmodel.content = notice.title + "\n" + notice.detail;
+                    msgmodel.nickname = "[公告]";
+                    msgmodel.position_x = 0f;
+                    msgmodel.position_y = 0f;
+                    msgmodel.position_z = 0f;
+                    msgmodel.roomno = 1;
+                    msgmodel.type = 3;
+                    msgmodel.username = "0";
+                    string json = JsonUtility.ToJson(msgmodel);
+                    Msg_Receive(json, null);
+                }
+                
+            }
+            else
+            {
+                if (obj.code == 400)//强制下线
+                {
+                    Debug.Log("消息存储失败！");
+                }
+                else
+                {
+                    Debug.Log(obj);
+                }
+            }
+
+            Debug.Log(postData.text);
+        }
+    }
+
     public void Pos_Receive(string data, Socket posclientsocket)
     {
         //如果此人已上线，即该线哈希表存在此人的msgsocket，则修改表项键值
@@ -575,6 +621,7 @@ public class StateObject : MonoBehaviour {
             callback.msgmodel = new MsgModel[1];
             callback.msgmodel[0] = msgmodel;
             string json = JsonUtility.ToJson(callback);
+
             WWWForm form = new WWWForm();//存储消息
             form.AddField("type", obj.type);
             form.AddField("position_x", obj.position_x.ToString());
@@ -589,6 +636,7 @@ public class StateObject : MonoBehaviour {
             {
                 StartCoroutine(save_msg("http://localhost:3000/api/v1/message/uploadMsg", form));
             }
+
             if (obj != null) 
             {
                 if (obj.type > 5 || obj.type < 1) 
@@ -830,6 +878,8 @@ public class StateObject : MonoBehaviour {
         {
             time = 0f;
             CheckOffLine();
+            WWWForm form = new WWWForm();//存储消息
+            StartCoroutine(poll("http://localhost:3000/api/v1/admin/polling", form));
         }
     }
 }
@@ -850,6 +900,18 @@ public class RegisterModel
 public class GoOnlineModel
 {
     public int code;
+}
+[System.Serializable]
+public class Polldata
+{
+    public string title;
+    public string detail;
+}
+[System.Serializable]
+public class PollModel
+{
+    public int code;
+    public Polldata[] data;
 }
 [System.Serializable]
 public class Callback_SocketModel
